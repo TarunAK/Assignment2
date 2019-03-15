@@ -17,15 +17,17 @@ static int set_semvalue(int semid, int semnum)
 {
     union semun sem_union;
     sem_union.val = 1;
-    if (semctl(semid, semnum, SETVAL, sem_union) == -1)
+    unsigned short a[5] = {1, 1, 1, 1, 1};
+    sem_union.array = a;
+    if (semctl(semid, semnum, SETALL, sem_union) == -1)
         return 0;
     return 1;
 }
 
-static void del_semvalue(int semid, int semnum)
+static void del_semvalue(int semid)
 {
     union semun sem_union;
-    if (semctl(semid, semnum, IPC_RMID, sem_union) == -1)
+    if (semctl(semid, 0, IPC_RMID, sem_union) == -1)
         fprintf(stderr, "Failed to delete semaphore\n");
 }
 
@@ -138,20 +140,6 @@ int main(void)
     int semid, shmid;
     void *shared_mem;
 
-    semkey = ftok("./", 1);
-    if (semkey == (key_t)-1)
-    {
-        printf("main: ftok() for sem failed\n");
-        return -1;
-    }
-
-    shmkey = ftok("./", 1);
-    if (shmkey == (key_t)-1)
-    {
-        printf("main: ftok() for shm failed\n");
-        return -1;
-    }
-
     semid = semget(203948, NUMSEMS, 0666 | IPC_CREAT);
     if (semid == -1)
     {
@@ -168,7 +156,7 @@ int main(void)
         }
     }
 
-    shmid = shmget(shmkey, SIZE * sizeof(int), 0666 | IPC_CREAT); // shared memory identity
+    shmid = shmget(102985, SIZE * sizeof(int), 0666 | IPC_CREAT); // shared memory identity
     if (shmid == -1)
     {
         fprintf(stderr, "shmget failed\n");
@@ -192,7 +180,11 @@ int main(void)
     printf("%d\n", getMin());
     printf("%d\n", getMedian());
 
+<<<<<<< HEAD
     int a = 4; // number of child processes
+=======
+    int a = SIZE-1; // number of child processes
+>>>>>>> origin/master
     pid_t pids[a];
 
     /* Start children. */
@@ -205,6 +197,10 @@ int main(void)
         }
         else if (pids[i] == 0) // if process is a child
         {
+<<<<<<< HEAD
+=======
+            //printf("Child process: working with row: %d\n", i + 1);
+>>>>>>> origin/master
             sort(semid, i);
             exit(0);
         }
@@ -223,16 +219,14 @@ int main(void)
     printf("\n");
     printData();
 
-    for (int i; i < NUMSEMS; ++i)
-    {
-        del_semvalue(semid, i);
-    }
-    
+    del_semvalue(semid);
+
     if (shmdt(shared_mem) == -1)
     {
         fprintf(stderr, "shmdt failed\n");
         exit(EXIT_FAILURE);
     }
+
     if (shmctl(shmid, IPC_RMID, 0) == -1) 
     {
         fprintf(stderr, "shmctl failed\n");
