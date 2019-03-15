@@ -17,9 +17,7 @@ static int set_semvalue(int semid, int semnum)
 {
     union semun sem_union;
     sem_union.val = 1;
-    unsigned short a[5] = {1, 1, 1, 1, 1};
-    sem_union.array = a;
-    if (semctl(semid, semnum, SETALL, sem_union) == -1)
+    if (semctl(semid, semnum, SETVAL, sem_union) == -1)
         return 0;
     return 1;
 }
@@ -78,9 +76,9 @@ void printData(void)
 
 bool sorted(void)
 {
-    for (int i = 1; i < SIZE; i++)
+    for (int i = 0; i < SIZE; i++)
     {
-        if (data[i - 1] < data[i])
+        if (data[i] < data[i + 1])
         {
             return false;
         }
@@ -88,22 +86,29 @@ bool sorted(void)
     return true;
 }
 
-void sort(int semid, int pi)
+void sort(int semid, int pi, char debug)
 {
     int tmp;
-    while(!sorted())
+    while (!sorted())
     {
         if (data[pi + 1] > data[pi])
         {
-            
-            tmp = data[pi];
             p(semid, pi);
+            p(semid, pi + 1);
+            tmp = data[pi];
             data[pi] = data[pi + 1];
-            v(semid, pi);
-            p(semid, pi+1);
             data[pi + 1] = tmp;
-            v(semid, pi+1);
+            v(semid, pi);
+            v(semid, pi + 1);
+            if (debug == 'y')
+                printf("Process %d: Performed swapping\n", pi+1);
         }
+        else
+        {
+            if (debug == 'y')
+                printf("Process %d: No swapping\n", pi+1);
+        }
+        
     }
 }
 
@@ -139,6 +144,7 @@ int main(void)
     key_t semkey, shmkey;
     int semid, shmid;
     void *shared_mem;
+    char debug;
 
     semid = semget(203948, NUMSEMS, 0666 | IPC_CREAT);
     if (semid == -1)
@@ -173,14 +179,12 @@ int main(void)
     data = (int *)shared_mem;
 
     collectData();
+    printf("Unsorted array: ");
     printData();
-    printf("\n");
+    printf("Debug Mode: [y/n]\n");
+    scanf(" %c", &debug);
 
-    printf("%d\n", getMax());
-    printf("%d\n", getMin());
-    printf("%d\n", getMedian());
-
-    int a = SIZE-1; // number of child processes
+    int a = SIZE - 1; // number of child processes
     pid_t pids[a];
 
     /* Start children. */
@@ -193,10 +197,14 @@ int main(void)
         }
         else if (pids[i] == 0) // if process is a child
         {
-            //printf("Child process: working with row: %d\n", i + 1);
-            sort(semid, i);
+            sort(semid, i, debug);
             exit(0);
         }
+    }
+
+    while (!sorted())
+    {
+        sorted();
     }
 
     /* Wait for children to exit. */
@@ -209,8 +217,11 @@ int main(void)
         --a; // Remove pid from the pids array.
     }
 
-    printf("\n");
+    printf("Sorted array: ");
     printData();
+    printf("Maximum: %d\n", getMax());
+    printf("Minimum: %d\n", getMin());
+    printf("Median: %d\n", getMedian());
 
     del_semvalue(semid);
 
@@ -220,10 +231,9 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    if (shmctl(shmid, IPC_RMID, 0) == -1) 
+    if (shmctl(shmid, IPC_RMID, 0) == -1)
     {
         fprintf(stderr, "shmctl failed\n");
         exit(EXIT_FAILURE);
     }
-    
 }
