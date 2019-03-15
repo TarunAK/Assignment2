@@ -192,7 +192,7 @@ int main(void)
     printf("%d\n", getMin());
     printf("%d\n", getMedian());
 
-    int a = SIZE; // number of child processes
+    int a = 4; // number of child processes
     pid_t pids[a];
 
     /* Start children. */
@@ -205,7 +205,6 @@ int main(void)
         }
         else if (pids[i] == 0) // if process is a child
         {
-            printf("Child process: working with row: %d\n", i + 1);
             sort(semid, i);
             exit(0);
         }
