@@ -1,9 +1,7 @@
 #include <sys/types.h>
-
 #include <sys/wait.h>
 #include <sys/sem.h>
 #include <stdbool.h>
-
 #include <sys/shm.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -136,14 +134,13 @@ void sort(int semid, int pi, char debug)
             v(semid, pi);
             v(semid, pi + 1);
             if (debug == 'y')
-                printf("Process %d: Performed swapping\n", pi+1);
+                printf("Process %d: Performed swapping\n", pi + 1);
         }
         else
         {
             if (debug == 'y')
-                printf("Process %d: No swapping\n", pi+1);
+                printf("Process %d: No swapping\n", pi + 1);
         }
-        
     }
 }
 
@@ -246,7 +243,6 @@ int main(void)
         }
     }
 
-    
     while (!sorted()) // Check if array is sorted
     {
         sorted();
