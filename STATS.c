@@ -11,8 +11,13 @@
 #include <string.h>
 #include "shm.h"
 
-#define NUMSEMS 5
+#define SEMKEY 203948
+#define SHMKEY 102985
+#define NUMSEMS 5 // # of semaphores in semaphore set (one for each process)
 
+/**
+ * Function to initialize values of all the semaphores in the semaphore set
+ */
 static int set_semvalue(int semid, int semnum)
 {
     union semun sem_union;
@@ -22,6 +27,9 @@ static int set_semvalue(int semid, int semnum)
     return 1;
 }
 
+/**
+ * Deletes all semaphores in semaphore set
+ */
 static void del_semvalue(int semid)
 {
     union semun sem_union;
@@ -29,6 +37,9 @@ static void del_semvalue(int semid)
         fprintf(stderr, "Failed to delete semaphore\n");
 }
 
+/**
+ * Wait function
+ */
 static int p(int semid, int child)
 {
     struct sembuf sem_b;
@@ -42,6 +53,9 @@ static int p(int semid, int child)
     return 1;
 }
 
+/**
+ * Signal function
+ */
 static int v(int semid, int child)
 {
     struct sembuf sem_b;
@@ -56,6 +70,9 @@ static int v(int semid, int child)
     return 1;
 }
 
+/**
+ * Creates and array from user inputted integers
+ */
 void collectData(void)
 {
     printf("Please enter 5 integers:\n");
@@ -65,6 +82,9 @@ void collectData(void)
     }
 }
 
+/**
+ * Prints the array
+ */
 void printData(void)
 {
     for (int i = 0; i < SIZE; i++)
@@ -74,6 +94,9 @@ void printData(void)
     printf("\n");
 }
 
+/**
+ * Checks if array is sorted in decreasing order
+ */
 bool sorted(void)
 {
     for (int i = 0; i < SIZE; i++)
@@ -86,6 +109,9 @@ bool sorted(void)
     return true;
 }
 
+/**
+ * Sorts the array
+ */
 void sort(int semid, int pi, char debug)
 {
     int tmp;
@@ -93,11 +119,20 @@ void sort(int semid, int pi, char debug)
     {
         if (data[pi + 1] > data[pi])
         {
+            /**
+             * Request keys for two adjacent array elements
+             */
             p(semid, pi);
             p(semid, pi + 1);
+            /**
+             * Swapping here
+             */
             tmp = data[pi];
             data[pi] = data[pi + 1];
             data[pi + 1] = tmp;
+            /**
+             * Release keys for two adjacent array elements
+             */
             v(semid, pi);
             v(semid, pi + 1);
             if (debug == 'y')
@@ -112,6 +147,9 @@ void sort(int semid, int pi, char debug)
     }
 }
 
+/**
+ * Gets median if sorted
+ */
 int getMedian(void)
 {
     if (sorted())
@@ -121,6 +159,9 @@ int getMedian(void)
     return 0;
 }
 
+/**
+ * Gets maximum if sorted
+ */
 int getMax(void)
 {
     if (sorted())
@@ -130,6 +171,9 @@ int getMax(void)
     return 0;
 }
 
+/**
+ * Gets minimum if sorted
+ */
 int getMin(void)
 {
     if (sorted())
@@ -142,18 +186,18 @@ int getMin(void)
 int main(void)
 {
     key_t semkey, shmkey;
-    int semid, shmid;
+    int semid, shmid; // semaphore set and shared memory identities, respectively
     void *shared_mem;
-    char debug;
+    char debug; // for debug mode
 
-    semid = semget(203948, NUMSEMS, 0666 | IPC_CREAT);
+    semid = semget(SEMKEY, NUMSEMS, 0666 | IPC_CREAT); // creating semaphore set of 5
     if (semid == -1)
     {
         printf("main: semget() failed\n");
         return -1;
     }
 
-    for (int i = 0; i < NUMSEMS; i++)
+    for (int i = 0; i < NUMSEMS; i++) // Initializes semaphores
     {
         if (!set_semvalue(semid, i))
         {
@@ -162,7 +206,7 @@ int main(void)
         }
     }
 
-    shmid = shmget(102985, SIZE * sizeof(int), 0666 | IPC_CREAT); // shared memory identity
+    shmid = shmget(SHMKEY, SIZE * sizeof(int), 0666 | IPC_CREAT); // shared memory identity
     if (shmid == -1)
     {
         fprintf(stderr, "shmget failed\n");
@@ -176,13 +220,13 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    data = (int *)shared_mem;
+    data = (int *)shared_mem; // assigning shared memory to the struct in the header file "shm.h"
 
     collectData();
     printf("Unsorted array: ");
     printData();
-    printf("Debug Mode: [y/n]\n");
-    scanf(" %c", &debug);
+    printf("Debug Mode? [y/n]\n");
+    scanf(" %c", &debug); // input for debug mode
 
     int a = SIZE - 1; // number of child processes
     pid_t pids[a];
@@ -202,7 +246,8 @@ int main(void)
         }
     }
 
-    while (!sorted())
+    
+    while (!sorted()) // Check if array is sorted
     {
         sorted();
     }
@@ -213,7 +258,6 @@ int main(void)
     while (a > 0)
     {
         pid = wait(&status);
-        //printf("Child with PID of %ld of parent %ld exited with status 0x%x.\n", (long)pid, (long)getppid(), status);
         --a; // Remove pid from the pids array.
     }
 
@@ -223,7 +267,7 @@ int main(void)
     printf("Minimum: %d\n", getMin());
     printf("Median: %d\n", getMedian());
 
-    del_semvalue(semid);
+    del_semvalue(semid); // Delete all semaphores
 
     if (shmdt(shared_mem) == -1)
     {
