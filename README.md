@@ -1,4 +1,5 @@
 To run:
+  make -f Makefile
   ./runthis
   
 Sample Output (both without Debug Mode):
