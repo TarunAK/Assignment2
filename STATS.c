@@ -14,7 +14,7 @@
 #define NUMSEMS 5 // # of semaphores in semaphore set (one for each process)
 
 /**
- * Function to initialize values of all the semaphores in the semaphore set
+ * Initialize values of all the semaphores in the semaphore set
  */
 static int set_semvalue(int semid, int semnum)
 {
@@ -194,7 +194,7 @@ int main(void)
         return -1;
     }
 
-    for (int i = 0; i < NUMSEMS; i++) // Initializes semaphores
+    for (int i = 0; i < NUMSEMS; i++) // initializes semaphores
     {
         if (!set_semvalue(semid, i))
         {
@@ -243,18 +243,18 @@ int main(void)
         }
     }
 
-    while (!sorted()) // Check if array is sorted
+    while (!sorted()) // check if array is sorted
     {
         sorted();
     }
 
-    /* Wait for children to exit. */
+    /* wait for children to exit. */
     int status;
     pid_t pid;
     while (a > 0)
     {
         pid = wait(&status);
-        --a; // Remove pid from the pids array.
+        --a; // remove pid from the pids array.
     }
 
     printf("Sorted array: ");
@@ -263,15 +263,15 @@ int main(void)
     printf("Minimum: %d\n", getMin());
     printf("Median: %d\n", getMedian());
 
-    del_semvalue(semid); // Delete all semaphores
+    del_semvalue(semid); // delete all semaphores
 
-    if (shmdt(shared_mem) == -1)
+    if (shmdt(shared_mem) == -1) // detach shared memory
     {
         fprintf(stderr, "shmdt failed\n");
         exit(EXIT_FAILURE);
     }
 
-    if (shmctl(shmid, IPC_RMID, 0) == -1)
+    if (shmctl(shmid, IPC_RMID, 0) == -1) // delete shared memory segment
     {
         fprintf(stderr, "shmctl failed\n");
         exit(EXIT_FAILURE);
