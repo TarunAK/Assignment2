@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "shm.h"
+#include "semun.h"
 
 #define SEMKEY 203948
 #define SHMKEY 102985
